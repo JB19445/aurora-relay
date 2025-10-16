@@ -4,9 +4,15 @@ import { applyProxy } from "./routes/apply-rewrite.js";
 
 const router = Router();
 
-// (optioneel) No-store tegen caching van probes
+// No-store tegen caching van probes
 router.use((req, res, next) => {
   res.set('Cache-Control', 'no-store');
+  next();
+});
+
+// 🔎 Log elk MCP-verzoek (methode + pad)
+router.use((req, _res, next) => {
+  console.log('[MCP]', req.method, req.path);
   next();
 });
 
@@ -22,7 +28,7 @@ router.options("*", (req, res) => {
   res.status(200).end();
 });
 
-// Reageer ook op POST /mcp zelf (sommige tools testen dit pad)
+// Reageer ook op POST /mcp zelf (soms geprobeerd door clients)
 router.post("/", (req, res) => {
   res.json({ ok: true, endpoints: ["/tools/list", "/tools/call"] });
 });
@@ -147,6 +153,16 @@ router.post("/tools/call", async (req, res) => {
     console.error("[mcp/tools/call]", e);
     return res.status(500).json({ error: "mcp_call_failed", detail: String(e) });
   }
+});
+
+// ✅ Catch-all binnen /mcp om onbekende paden/methodes zichtbaar te maken
+router.all("*", (req, res) => {
+  res.status(404).json({
+    error: "unknown_mcp_route",
+    method: req.method,
+    path: req.path,
+    expected: ["/", "/tools/list", "/tools/call"]
+  });
 });
 
 export const mcpRouter = router;
