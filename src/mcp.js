@@ -5,7 +5,7 @@ import { applyProxy } from "./routes/apply-rewrite.js";
 const router = Router();
 
 /**
- * Extra probes/compat: sommige clients doen HEAD/OPTIONS op de base route.
+ * Compatibele probes — sommige clients doen HEAD/OPTIONS/POST op de base route
  */
 router.head("/", (req, res) => res.status(200).end());
 router.options("*", (req, res) => {
@@ -16,8 +16,13 @@ router.options("*", (req, res) => {
   res.status(200).end();
 });
 
+// 🔧 NIEUW: reageer ook op POST /mcp zelf (sommige tools testen dit pad)
+router.post("/", (req, res) => {
+  res.json({ ok: true, endpoints: ["/tools/list", "/tools/call"] });
+});
+
 /**
- * Basispad voor health/probe (ChatGPT kan eerst een GET op /mcp doen)
+ * Basispad voor health/probe (GET)
  */
 router.get("/", (req, res) => {
   res.json({ ok: true, endpoints: ["/tools/list", "/tools/call"] });
