@@ -4,6 +4,12 @@ import { applyProxy } from "./routes/apply-rewrite.js";
 
 const router = Router();
 
+// (optioneel) No-store tegen caching van probes
+router.use((req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  next();
+});
+
 /**
  * Compatibele probes — sommige clients doen HEAD/OPTIONS/POST op de base route
  */
@@ -16,7 +22,7 @@ router.options("*", (req, res) => {
   res.status(200).end();
 });
 
-// 🔧 NIEUW: reageer ook op POST /mcp zelf (sommige tools testen dit pad)
+// Reageer ook op POST /mcp zelf (sommige tools testen dit pad)
 router.post("/", (req, res) => {
   res.json({ ok: true, endpoints: ["/tools/list", "/tools/call"] });
 });
