@@ -4,7 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { extractContent } from './routes/extract-content.js';
 import { applyRewrite } from './routes/apply-rewrite.js';
-import mcpRouter from './mcp.js'; // gebruikt de default export uit mcp.js
+import mcpRouter from './mcp.js'; // default export
 
 dotenv.config();
 
@@ -27,5 +27,10 @@ app.post('/apply-rewrite', applyRewrite);
 // MCP (Connector) routes
 app.use('/mcp', mcpRouter);
 
-// Belangrijk: op Vercel GEEN app.listen(); exporteer het app-object
+// Catch-all (zichtbare 404 met path)
+app.all('*', (req, res) => {
+  res.status(404).json({ error: 'not_found', path: req.path, method: req.method });
+});
+
+// Op Vercel: GEEN app.listen(); exporteer het app-object
 export default app;
