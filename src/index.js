@@ -4,28 +4,28 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { extractContent } from './routes/extract-content.js';
 import { applyRewrite } from './routes/apply-rewrite.js';
-import mcpRouter from './mcp.js'; // default export gebruiken
+import mcpRouter from './mcp.js'; // gebruikt de default export uit mcp.js
 
 dotenv.config();
 
 const app = express();
 
-// parsers, logging, cors vóór routes
+// Parsers, CORS en logging vóór routes
 app.use(cors());
 app.use(express.json({ limit: '1mb' }));
 app.use(morgan('tiny'));
 
-// health
+// Healthcheck
 app.get('/health', (req, res) =>
   res.json({ ok: true, time: new Date().toISOString() })
 );
 
-// relay-routes
+// Relay-routes
 app.get('/extract-content', extractContent);
 app.post('/apply-rewrite', applyRewrite);
 
-// MCP router
+// MCP (Connector) routes
 app.use('/mcp', mcpRouter);
 
-// Belangrijk: NIET app.listen() aanroepen op Vercel
+// Belangrijk: op Vercel GEEN app.listen(); exporteer het app-object
 export default app;
