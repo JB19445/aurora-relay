@@ -5,6 +5,18 @@ import { applyProxy } from "./routes/apply-rewrite.js";
 const router = Router();
 
 /**
+ * Extra probes/compat: sommige clients doen HEAD/OPTIONS op de base route.
+ */
+router.head("/", (req, res) => res.status(200).end());
+router.options("*", (req, res) => {
+  res.set({
+    "Allow": "GET,POST,HEAD,OPTIONS",
+    "Content-Type": "application/json"
+  });
+  res.status(200).end();
+});
+
+/**
  * Basispad voor health/probe (ChatGPT kan eerst een GET op /mcp doen)
  */
 router.get("/", (req, res) => {
