@@ -4,7 +4,53 @@ import { applyProxy } from "./routes/apply-rewrite.js";
 
 const router = Router();
 
-// Geeft tool-definities terug aan ChatGPT (MCP)
+/**
+ * Basispad voor health/probe (ChatGPT kan eerst een GET op /mcp doen)
+ */
+router.get("/", (req, res) => {
+  res.json({ ok: true, endpoints: ["/tools/list", "/tools/call"] });
+});
+
+/**
+ * (Optioneel) GET-variant om eenvoudig in de browser te testen
+ */
+router.get("/tools/list", (req, res) => {
+  res.json({
+    tools: [
+      {
+        name: "extract_content",
+        description: "Leest inhoud + meta voor een WordPress post_id.",
+        input_schema: {
+          type: "object",
+          properties: {
+            post_id: { type: "number", minimum: 1 }
+          },
+          required: ["post_id"],
+          additionalProperties: false
+        },
+        annotations: { readOnlyHint: true }
+      },
+      {
+        name: "apply_rewrite",
+        description: "Schrijft SEO-title en meta description weg naar WordPress.",
+        input_schema: {
+          type: "object",
+          properties: {
+            post_id: { type: "number", minimum: 1 },
+            title: { type: "string", maxLength: 120 },
+            description: { type: "string", maxLength: 200 }
+          },
+          required: ["post_id"],
+          additionalProperties: false
+        }
+      }
+    ]
+  });
+});
+
+/**
+ * Geeft tool-definities terug aan ChatGPT (MCP) — officiële POST-route
+ */
 router.post("/tools/list", (req, res) => {
   res.json({
     tools: [
@@ -39,15 +85,18 @@ router.post("/tools/list", (req, res) => {
   });
 });
 
-// Voert een tool-call uit
+/**
+ * Voert een tool-call uit
+ */
 router.post("/tools/call", async (req, res) => {
   try {
     const { name, arguments: args } = req.body || {};
     if (!name) return res.status(400).json({ error: "tool_name_required" });
 
     if (name === "extract_content") {
-      if (!args || typeof args.post_id !== "number")
+      if (!args || typeof args.post_id !== "number") {
         return res.status(400).json({ error: "bad_arguments" });
+      }
       const result = await extractProxy(args.post_id);
       return res.json({
         content: JSON.stringify(result),
@@ -56,11 +105,13 @@ router.post("/tools/call", async (req, res) => {
     }
 
     if (name === "apply_rewrite") {
-      if (!args || typeof args.post_id !== "number")
+      if (!args || typeof args.post_id !== "number") {
         return res.status(400).json({ error: "bad_arguments" });
+      }
       const payload = { post_id: args.post_id, edits: [], meta: {} };
       if (typeof args.title === "string") payload.meta.title = args.title;
       if (typeof args.description === "string") payload.meta.description = args.description;
+
       const result = await applyProxy(payload);
       return res.json({
         content: JSON.stringify(result),
